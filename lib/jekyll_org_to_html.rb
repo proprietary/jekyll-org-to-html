@@ -1,12 +1,13 @@
 require 'jekyll'
+require 'tempfile'
 
-$DEBUG = false
-
-$ELISP = <<END
+ELISP = <<END
 (package-initialize)
 
 (require 'org)
 (require 'cl)
+
+(setq org-html-postamble nil)
 
 (defun org->html-impl (org-text)
   (with-temp-buffer
@@ -20,6 +21,11 @@ $ELISP = <<END
 (defun org->html-temp-file (org-text)
   (with-temp-file "/tmp/org-to-html"
     (insert (org->html-impl org-text))))
+
+(defun org->html (org-file)
+  (with-temp-buffer
+    (insert-file-contents org-file)
+    (org->html-temp-file (buffer-string))))
 END
 
 module Jekyll
@@ -36,26 +42,29 @@ module Jekyll
     end
 
     def convert(content)
-      # script = IO.read("/home/zds/devel/emacs/org-to-html/org-to-html.elisp").chomp
-      escaped_input = content.dump[1..-2]
+      elisp_script = Tempfile.new 'org-to-html-elisp'
+      elisp_script.write ELISP
+      elisp_script.rewind
 
-      elisp = if $DEBUG
-                IO.read('./org-to-html.el').dump[1..-2] # escaped
-              else
-                $ELISP.dump[1..-2]
-              end
-      # Run our elisp script and receive any errors from stdout
-      out = `emacs --batch --eval='#{elisp} (org->html-temp-file "#{escaped_input}")' 2>&1`
+      content_as_file = Tempfile.new
+      content_as_file.write content
+      content_as_file.rewind
+
+      # Run our elisp script and receive any errors from stdout      
+      out = `emacs --batch --load '#{elisp_script.path}' --eval '(org->html \"#{content_as_file.path}\")' 2>&1`
       # 2>&1 means redirect stderr to stdout
       # Emacs in `--batch` mode sends output to stderr instead of stdout
-      puts out
       raise "Emacs rejected your org-mode file: #{out}" unless
         $?.exitstatus.zero?
+
+      elisp_script.unlink
+
+      content_as_file.unlink
 
       # The elisp script saves the output in this named temp file
       # Warning: possible race condition if Jekyll ever parallelizes conversion
 
-      IO.new(IO.sysopen("/tmp/org-to-html")).read.chomp!
+      File.open("/tmp/org-to-html", "r").read
     end
   end
 end
