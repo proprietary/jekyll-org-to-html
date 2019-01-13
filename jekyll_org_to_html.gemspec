@@ -1,5 +1,5 @@
 Gem::Specification.new do |s|
-  s.name        = 'jekyll_org_to_html'
+  s.name        = 'jekyll-org-to-html'
   s.version     = '0.0.1'
   s.date        = '2019-01-13'
   s.summary     = "Converts org-mode (Emacs) markup to html for Jekyll"
@@ -8,6 +8,6 @@ Gem::Specification.new do |s|
   s.email       = 'zelly@outlook.com'
   s.files       = ["lib/jekyll_org_to_html.rb"]
   s.homepage    =
-    'https://github.com/hackharmony/jekyll_org_to_html'
+    'https://github.com/hackharmony/jekyll-org-to-html'
   s.license       = 'MIT'
 end

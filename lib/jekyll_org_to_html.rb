@@ -57,13 +57,14 @@ module Jekyll
       raise "Emacs rejected your org-mode file: #{out}" unless
         $?.exitstatus.zero?
 
+      # Remove the temp files
       elisp_script.unlink
-
       content_as_file.unlink
 
       # The elisp script saves the output in this named temp file
       # Warning: possible race condition if Jekyll ever parallelizes conversion
-
+      # Don't change the name of this temp file without also changing
+      # it in the elisp code above.
       File.open("/tmp/org-to-html", "r").read
     end
   end
